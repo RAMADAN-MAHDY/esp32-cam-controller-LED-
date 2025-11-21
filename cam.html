@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>كاميرا ESP32-CAM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      text-align: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #e0f2f7, #ffffff);
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #007bff;
+      margin-bottom: 25px;
+      font-size: 28px;
+    }
+
+    .image-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 500px;
+      overflow: hidden;
+      background-color: #f8f9fa;
+      border-radius: 15px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border: 5px solid #007bff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      margin-top: 10px;
+    }
+
+    .controls {
+      display: inline-block;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    button {
+      padding: 12px 28px;
+      margin: 8px;
+      font-size: 16px;
+      border: none;
+      border-radius: 25px;
+      font-weight: bold;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: 0.3s;
+      color: #fff;
+    }
+
+    button:nth-of-type(1) { background: linear-gradient(to right, #28a745, #218838); }
+    button:nth-of-type(1):hover { transform: translateY(-3px); }
+
+    button:nth-of-type(2) { background: linear-gradient(to right, #dc3545, #c82333); }
+    button:nth-of-type(2):hover { transform: translateY(-3px); }
+
+    button:nth-of-type(3) { background: linear-gradient(to right, #ffc107, #e0a800); color: #333; }
+    button:nth-of-type(3):hover { transform: translateY(-3px); }
+
+    button.remote { background: linear-gradient(to right, #17a2b8, #117a8b); }
+    button.remote:hover { transform: translateY(-3px); }
+
+    #ledStatus {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    @media(max-width:768px){
+      h1{ font-size: 24px; }
+      img{ height: auto; }
+      .controls{ width: 90%; padding: 15px; }
+      button{ width: 100%; margin: 10px 0; }
+    }
+
+    @media(max-width:480px){
+      h1{ font-size: 20px; }
+      .controls{ padding: 10px; }
+      button{ font-size: 14px; padding: 10px 15px; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>كاميرا ESP32-CAM</h1>
+
+<div class="image-container">
+  <img id="camera" src="">
+</div>
+
+<div class="controls">
+  <h3>تحكم محلي (ESP32)</h3>
+  <button onclick="controlLED('on')">تشغيل LED</button>
+  <button onclick="controlLED('off')">إيقاف LED</button>
+  <button onclick="toggleCamera()">تشغيل/إيقاف الكاميرا</button>
+
+  <h3>تحكم عن بعد (الخادم)</h3>
+  <button class="remote" onclick="controlRemoteLED('on')">تشغيل LED عن بعد</button>
+  <button class="remote" onclick="controlRemoteLED('off')">إيقاف LED عن بعد</button>
+  <button class="remote" onclick="toggleRemoteCamera()">تشغيل/إيقاف الكاميرا عن بعد</button>
+
+  <!-- <p id="ledStatus">حالة LED: غير معروف</p> -->
+</div>
+
+<script>
+const camIP = "http://192.168.1.100"; // IP محلي للكاميرا
+const serverURL = "https://your-server.com/device"; // رابط السيرفر الخارجي
+const camImg = document.getElementById("camera");
+const ledStatusElement = document.getElementById("ledStatus");
+
+let isCameraOn = true;
+
+// تحديث الصورة بشكل مستمر
+async function updateImage(){
+  if(!isCameraOn) return;
+  camImg.src = camIP + "/?t=" + new Date().getTime();
+}
+
+// التحكم المحلي في LED
+async function controlLED(action){
+  try{
+    await fetch(`${camIP}/led/${action}`);
+    ledStatusElement.textContent = `حالة LED: ${action === 'on' ? 'تشغيل' : 'إيقاف'}`;
+  }catch(err){
+    // ledStatusElement.textContent = `حالة LED: خطأ في التحكم`;
+  }
+}
+
+// الحصول على حالة LED من الكاميرا
+async function getLEDStatus(){
+  try{
+    const res = await fetch(`${camIP}/status`);
+    const data = await res.text();
+    ledStatusElement.textContent = `حالة LED: ${data}`;
+  }catch(err){
+    // ledStatusElement.textContent = `حالة LED: خطأ في جلب الحالة`;
+  }
+}
+
+// التحكم بالكاميرا محلياً
+function toggleCamera(){
+  isCameraOn = !isCameraOn;
+  ledStatusElement.textContent = `الكاميرا ${isCameraOn ? 'مفتوحة' : 'مقفلة'}`;
+}
+
+// التحكم عن بعد في LED
+async function controlRemoteLED(action){
+  try{
+    const res = await fetch(`${serverURL}/led/${action}`, { method: 'POST' });
+    const data = await res.json();
+    ledStatusElement.textContent = `حالة LED: ${data.led}`;
+  }catch(err){
+    // ledStatusElement.textContent = `حالة LED: خطأ في التحكم الخارجي`;
+  }
+}
+
+// التحكم عن بعد بالكاميرا
+async function toggleRemoteCamera(){
+  try{
+    const res = await fetch(`${serverURL}/camera/toggle`, { method: 'POST' });
+    const data = await res.json();
+    isCameraOn = data.camera;
+    ledStatusElement.textContent = `الكاميرا ${isCameraOn ? 'مفتوحة' : 'مقفلة'}`;
+  }catch(err){
+    // ledStatusElement.textContent = `الكاميرا: خطأ في التحكم الخارجي`;
+  }
+}
+
+// تحديث الصورة كل نصف ثانية
+setInterval(updateImage, 500);
+
+// جلب حالة LED عند التحميل
+getLEDStatus();
+</script>
+
+</body>
+</html>
