@@ -1,5 +1,5 @@
 import express from "express";
-import transcribeRouter from "./routes/transcribe.js";
+// import transcribeRouter from "./routes/transcribe.js";
 import connectDB from './config/db.js';
 import deviceRouter from "./routes/device.js";
 
@@ -12,7 +12,7 @@ connectDB();
 
 app.use("/device", deviceRouter);
 // استخدام الراوتر
-app.use("/transcribe", transcribeRouter);
+// app.use("/transcribe", transcribeRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);

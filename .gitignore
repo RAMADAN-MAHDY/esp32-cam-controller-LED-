@@ -5,11 +5,9 @@
 .platformio/
 
 # Visual Studio Code
-.vscode/
 *.code-workspace
 node_modules/
 speech.mp3
-.env
 # macOS
 .DS_Store
 
@@ -33,3 +31,7 @@ build/
 # Secrets
 secrets.h
 credentials.json
+temp_auto_push.bat
+temp_interactive_push.bat
+branch_structure.json
+config.bat
